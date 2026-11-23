@@ -1,0 +1,16 @@
+{
+  "name": "switchboard",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Daily railway dispatch puzzle built for Reddit Devvit Web",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "verify": "node scripts/verify-shifts.mjs"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}
