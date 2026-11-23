@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>SWITCHBOARD — Daily Railway Dispatch</title>
+</head>
+<body>
+  <div id="app">
+    <!-- TOP HARDWARE CONSOLE -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-plate">SWITCHBOARD</div>
+        <div class="shift-meta">
+          <span class="shift-kicker" id="hdr-code">DAY #01 • PAR 3</span>
+          <span class="shift-title" id="hdr-name">Morning Rush</span>
+        </div>
+      </div>
+
+      <div class="top-right">
+        <nav class="shift-bank" id="shift-bank" aria-label="Daily Shifts"></nav>
+        <button class="hw-btn" id="btn-lab" title="Crisis Lab — Build & Verify Custom Shifts">LAB</button>
+        <button class="hw-btn" id="btn-mute" title="Toggle Audio (M)">SFX</button>
+        <div class="streak-badge" id="streak-badge" title="Cleared Shifts Streak">🔥 0</div>
+      </div>
+    </header>
+
+    <!-- RECESSED VFD TELEMETRY -->
+    <div class="vfd-strip">
+      <div class="vfd-group">
+        <div class="vfd-cell">
+          <span class="vfd-lbl">DELIVERED</span>
+          <span class="vfd-val" id="vfd-trains">0/2</span>
+        </div>
+        <div class="vfd-cell">
+          <span class="vfd-lbl">ACTIONS</span>
+          <span class="vfd-val good" id="vfd-actions">0</span>
+          <span class="vfd-sub" id="vfd-par">/3</span>
+        </div>
+        <div class="vfd-cell">
+          <span class="vfd-lbl">CLOCK</span>
+          <span class="vfd-val" id="vfd-clock">00.0s</span>
+        </div>
+      </div>
+      <div class="status-pill">
+        <span class="led" id="status-led"></span>
+        <span id="status-text">PLANNING</span>
+      </div>
+    </div>
+
+    <!-- INTERACTIVE BOARD STAGE -->
+    <main class="stage">
+      <canvas id="board"></canvas>
+
+      <!-- Floating Heatmap / Replay Banner -->
+      <div class="mode-banner" id="mode-banner">
+        <span id="mode-banner-text">📊 REDDIT HEATMAP</span>
+        <button class="hw-btn lit" id="btn-replay-pause" style="display:none;">PAUSE</button>
+        <button class="hw-btn lit" id="btn-exit-mode">EXIT</button>
+      </div>
+
+      <!-- Victory / Incident Modal -->
+      <div class="overlay" id="result-overlay" role="dialog" aria-modal="true">
+        <div class="paper-card">
+          <div class="card-head">
+            <div>
+              <div class="card-kicker" id="res-kicker">DAY #01 • MORNING RUSH</div>
+              <div class="card-title" id="res-title">SHIFT CLEARED</div>
+            </div>
+            <div class="stamp stamp-gold" id="res-stamp">GOLD</div>
+          </div>
+
+          <p id="res-desc" class="card-desc"></p>
+
+          <div class="kpi-grid">
+            <div class="kpi-box">
+              <div class="k-lbl">ACTIONS</div>
+              <div class="k-val" id="res-actions">3</div>
+            </div>
+            <div class="kpi-box">
+              <div class="k-lbl">PAR</div>
+              <div class="k-val" id="res-par">3</div>
+            </div>
+            <div class="kpi-box">
+              <div class="k-lbl">TIME</div>
+              <div class="k-val" id="res-time">8.4s</div>
+            </div>
+          </div>
+
+          <div class="reddit-panel" id="res-community">
+            <div class="reddit-head">
+              <span>SUBREDDIT BREAKDOWN</span>
+              <span id="res-pct">TOP 14%</span>
+            </div>
+            <div class="bar-track" id="res-bars"></div>
+            <div class="bar-legend" id="res-legend"></div>
+          </div>
+
+          <div class="ticket-box" id="res-ticket"></div>
+          <div class="btn-grid" id="res-buttons"></div>
+        </div>
+      </div>
+
+      <!-- Operator Manual Modal -->
+      <div class="overlay" id="help-overlay" role="dialog" aria-modal="true">
+        <div class="paper-card">
+          <div class="card-head">
+            <div>
+              <div class="card-kicker">DISPATCH BUREAU MANUAL</div>
+              <div class="card-title">How to Operate</div>
+            </div>
+            <button class="hw-btn" id="btn-close-help">✕</button>
+          </div>
+          <div class="manual-body">
+            <div><strong>1. Match Shape &amp; Color:</strong> Guide <strong style="color:var(--line-red);">● A</strong>, <strong style="color:var(--line-blue);">■ B</strong>, and <strong style="color:var(--line-amber);">▲ C</strong> trains safely into their matching platforms.</div>
+            <div><strong>2. Brass vs. Copper Auto-Flip (↻) Switches:</strong> Tap any switch to aim its rail blades. <strong>Copper (↻)</strong> switches automatically flip to the alternate track after 1 train passes!</div>
+            <div><strong>3. One-Shot Semaphores (1×):</strong> Tap signal boxes (<code>GO / 2s / 4s</code>) to hold the <em>first</em> arriving train before diamond crossings (<code>✕</code>), then auto-clear to <code>GO</code>.</div>
+            <div><strong>4. Beat Par for Gold:</strong> Pre-run experimenting is free—only your final starting changes + live mid-run flips count toward Par.</div>
+            <div class="manual-keys">Keys: [Space] Dispatch/Pause • [1–9] Flip Switch • [R] Retry • [C] Clear • [Esc] Close</div>
+          </div>
+          <button class="btn-paper primary span2" id="btn-help-ok" style="width:100%;">BACK TO SWITCHBOARD</button>
+        </div>
+      </div>
+
+      <!-- Crisis Lab UGC Modal -->
+      <div class="overlay" id="lab-overlay" role="dialog" aria-modal="true">
+        <div class="paper-card" style="max-width:468px;">
+          <div class="card-head">
+            <div>
+              <div class="card-kicker">CRISIS LAB • UGC BUILDER</div>
+              <div class="card-title">Design a Custom Shift</div>
+            </div>
+            <button class="hw-btn" id="btn-close-lab">✕</button>
+          </div>
+
+          <div class="lab-row">
+            <span><strong>Sector Chassis</strong></span>
+            <select id="lab-chassis">
+              <option value="0">01 — Central Diamond</option>
+              <option value="1">02 — Bayfront Junction</option>
+              <option value="2">03 — Sumida Viaduct</option>
+              <option value="3">04 — Shinjuku Exchange</option>
+              <option value="4">05 — Grand Switchyard</option>
+            </select>
+          </div>
+
+          <div class="lab-subhead">
+            <span>TRAIN SCHEDULE</span>
+            <span id="lab-verify-pill">UNVERIFIED</span>
+          </div>
+          <div id="lab-trains"></div>
+          <button class="btn-paper" id="btn-lab-add" style="width:100%;margin-bottom:9px;padding:6px;">+ ADD TRAIN</button>
+
+          <div class="lab-subhead"><span>SHARE / LOAD SHIFT CODE</span></div>
+          <textarea class="lab-textarea" id="lab-code" rows="2" placeholder="Paste SWB3:... code or click Copy Code"></textarea>
+
+          <div class="btn-grid">
+            <button class="btn-paper" id="btn-lab-export">COPY CODE</button>
+            <button class="btn-paper" id="btn-lab-import">LOAD CODE</button>
+            <button class="btn-paper primary span2" id="btn-lab-play">PLAYTEST &amp; VERIFY ▶</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="toast" id="toast"></div>
+    </main>
+
+    <!-- BOTTOM DISPATCH DECK -->
+    <footer class="deck">
+      <div class="manifest-strip" id="manifest-strip"></div>
+      <div class="controls-bar">
+        <div class="ctrl-left">
+          <button class="btn-dispatch" id="btn-dispatch">▶ DISPATCH</button>
+          <button class="btn-deck" id="btn-retry" title="Retry keeping planned switches (R)">↺ RETRY</button>
+          <button class="btn-deck" id="btn-clear" title="Reset switches to default (C)">CLEAR</button>
+        </div>
+        <div class="ctrl-right">
+          <div class="speed-seg" role="group" aria-label="Simulation Speed">
+            <button class="speed-opt" data-spd="0.5" title="Tactical Slow-Mo">0.5x</button>
+            <button class="speed-opt active" data-spd="1" title="Normal Speed">1x</button>
+            <button class="speed-opt" data-spd="2" title="Fast Forward">2x</button>
+          </div>
+          <button class="btn-deck" id="btn-map-quick" title="Toggle Reddit Switch Heatmap" style="display:none;">📊</button>
+          <button class="btn-deck" id="btn-help" title="Operator Manual">?</button>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
